@@ -12,7 +12,7 @@ export function returnReplaceParameter(url) {
     url.includes(browser.runtime.getURL("replaced/replaced.html"));
 
   if (parameter.isReplaced) {
-    let paras = url.split("?")[1].split("&");
+    let paras = (url.split("?")[1] || "").split("&");
     for (let p of paras) {
       parameter[p.split("=")[0]] = decodeURIComponent(p.split("=")[1]);
     }
@@ -72,7 +72,7 @@ export async function replacePage(windowId = browser.windows.WINDOW_ID_CURRENT) 
 
   const parameter = returnReplaceParameter(info[0].url);
 
-  if (parameter.isReplaced && parameter.state == "redirect") {
+  if (parameter.isReplaced) {
     log.info(logDir, "replacePage()", windowId);
     let updateProperties = {};
     updateProperties.url = parameter.url;
@@ -89,13 +89,14 @@ export async function replacePage(windowId = browser.windows.WINDOW_ID_CURRENT) 
         }
       })
       .catch(() => {
+        if (parameter.state == "open_faild") return;
         updateProperties.url = returnReplaceURL(
           "open_faild",
           parameter.title,
           parameter.url,
           parameter.favIconUrl
         );
-        browser.tabs.update(info[0].id, updateProperties);
+        browser.tabs.update(info[0].id, updateProperties).catch(() => {});
       });
   }
 }
